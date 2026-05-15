@@ -9,7 +9,12 @@ const ai = new GoogleGenAI({
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, mimeType, bgColor } = await req.json();
+    const {
+      imageBase64,
+      mimeType,
+      bgColor,
+      gender,
+    } = await req.json();
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
@@ -26,19 +31,35 @@ export async function POST(req: NextRequest) {
     }
 
     const selectedBgColor = bgColor || "白";
+    const selectedGender = gender || "男性";
 
     const prompt = `
 新卒就活生向けの証明写真として自然に整えてください。
-本人の顔立ちは一切変更せず、別人にしないでください。
-背景色は「${selectedBgColor}」にしてください。
-清潔感のある明るい印象にしてください。
-可能であれば黒または紺のスーツ風に整えてください。
-縦長の3:4比率にしてください。
-髪型の変更もしないでさい。
-顔は写真のそもままを作ってください。
-肌の加工は一切しないでください。
-履歴書やESで使える自然な雰囲気にしてください。
-写真が女性の場合はネクタイは入れないでさい。
+
+【絶対条件】
+- 本人の顔立ちは一切変更しない
+- 別人にしない
+- 顔の輪郭を変更しない
+- 目、鼻、口を変更しない
+- 髪型を変更しない
+- 肌加工は禁止
+- 美肌加工は禁止
+- AIっぽい顔にしない
+- 自然な写真館クオリティ
+
+【証明写真条件】
+- 背景色は「${selectedBgColor}」
+- 性別は「${selectedGender}」
+- ${selectedGender}用の就活スーツを着用
+- 清潔感のある雰囲気
+- 履歴書やESで使用できる自然な証明写真
+- 3:4の縦長比率
+- 胸から上が映る構図
+- 正面を向く
+- 明るすぎない自然なライティング
+
+【重要】
+顔を変えず、写真を証明写真風に整えるイメージ。
 `;
 
     const generateOne = async () => {
@@ -63,8 +84,12 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const parts = response.candidates?.[0]?.content?.parts || [];
-      const imagePart = parts.find((part) => part.inlineData?.data);
+      const parts =
+        response.candidates?.[0]?.content?.parts || [];
+
+      const imagePart = parts.find(
+        (part) => part.inlineData?.data
+      );
 
       if (!imagePart?.inlineData?.data) {
         throw new Error("画像生成に失敗しました");
@@ -72,11 +97,15 @@ export async function POST(req: NextRequest) {
 
       return {
         imageBase64: imagePart.inlineData.data,
-        mimeType: imagePart.inlineData.mimeType || "image/png",
+        mimeType:
+          imagePart.inlineData.mimeType || "image/png",
       };
     };
 
-    const results = await Promise.all([generateOne(), generateOne()]);
+    const results = await Promise.all([
+      generateOne(),
+      generateOne(),
+    ]);
 
     return NextResponse.json({
       images: results,
@@ -85,7 +114,9 @@ export async function POST(req: NextRequest) {
     console.error("Gemini error:", error);
 
     return NextResponse.json(
-      { error: "Gemini APIでエラーが発生しました" },
+      {
+        error: "Gemini APIでエラーが発生しました",
+      },
       { status: 500 }
     );
   }
