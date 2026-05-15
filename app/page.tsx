@@ -221,7 +221,7 @@ export default function Home() {
       <div className="mx-auto max-w-md px-4 pt-6">
         <header className="mb-6">
           <p className="text-xs font-bold tracking-[0.25em] text-blue-700">
-            AI ツール
+            AIツール
           </p>
           <h1 className="mt-2 text-2xl font-black leading-tight">
             就活証明写真メーカー
