@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 顔は写真のそもままを作ってください。
 肌の加工は一切しないでください。
 履歴書やESで使える自然な雰囲気にしてください。
+写真が女性の場合はネクタイは入れないでさい。
 `;
 
     const generateOne = async () => {
