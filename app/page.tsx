@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 const LP_URL = "https://あなたのLPのURL";
 
+const genderOptions = [
+  { name: "男性", value: "男性" },
+  { name: "女性", value: "女性" },
+];
+
 const bgOptions = [
   { name: "白", value: "白", color: "#ffffff" },
   { name: "水色", value: "水色", color: "#dff4ff" },
@@ -18,6 +23,7 @@ export default function Home() {
   const [mimeType, setMimeType] = useState("image/jpeg");
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
+  const [gender, setGender] = useState("男性");
   const [bgColor, setBgColor] = useState("白");
   const [loading, setLoading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -35,72 +41,72 @@ export default function Home() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  
+
     setUploadError("");
     setGenerateError("");
     setGeneratedImages([]);
     setSelectedImage("");
     setUploadedImage("");
-  
+
     const fileName = file.name.toLowerCase();
     const fileType = file.type.toLowerCase();
-  
+
     const isHeic =
       fileType.includes("heic") ||
       fileType.includes("heif") ||
       fileName.endsWith(".heic") ||
       fileName.endsWith(".heif");
-  
+
     const isJpg =
       fileType === "image/jpeg" ||
       fileName.endsWith(".jpg") ||
       fileName.endsWith(".jpeg");
-  
+
     const isPng = fileType === "image/png" || fileName.endsWith(".png");
     const isWebp = fileType === "image/webp" || fileName.endsWith(".webp");
-  
+
     const isSupported = isJpg || isPng || isWebp || isHeic;
-  
+
     if (!isSupported) {
       setUploadError(
         "この画像形式は対応していません。JPG、PNG、WEBP、HEIC形式の写真を選択してください。"
       );
       return;
     }
-  
+
     try {
       if (isHeic) {
         const formData = new FormData();
         formData.append("file", file);
-  
+
         const res = await fetch("/api/convert-heic", {
           method: "POST",
           body: formData,
         });
-  
+
         const data = await res.json();
-  
+
         if (!res.ok) {
           throw new Error(data.error || "HEIC画像の変換に失敗しました。");
         }
-  
+
         setMimeType(data.mimeType || "image/jpeg");
         setUploadedImage(`data:${data.mimeType};base64,${data.imageBase64}`);
         return;
       }
-  
+
       setMimeType(file.type || "image/jpeg");
-  
+
       const reader = new FileReader();
-  
+
       reader.onload = () => {
         setUploadedImage(reader.result as string);
       };
-  
+
       reader.onerror = () => {
         setUploadError("画像の読み込みに失敗しました。別の写真でお試しください。");
       };
-  
+
       reader.readAsDataURL(file);
     } catch (err) {
       setUploadError(
@@ -133,6 +139,7 @@ export default function Home() {
         body: JSON.stringify({
           imageBase64: base64,
           mimeType,
+          gender,
           bgColor,
         }),
       });
@@ -295,6 +302,31 @@ export default function Home() {
 
         <section className="mb-5 rounded-[28px] bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-black">性別</h3>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+              OPTION
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {genderOptions.map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setGender(item.value)}
+                className={`rounded-3xl border-2 p-4 text-sm font-black transition ${
+                  gender === item.value
+                    ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-100"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-5 rounded-[28px] bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-base font-black">背景カラー</h3>
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
               OPTION
@@ -350,7 +382,7 @@ export default function Home() {
 
           {!loading && generatedImages.length === 0 && (
             <p className="rounded-3xl bg-slate-50 p-5 text-center text-xs text-slate-500">
-              写真と背景カラーを選択して、下のボタンからAI生成してください。
+              写真、性別、背景カラーを選択して、下のボタンからAI生成してください。
             </p>
           )}
 
